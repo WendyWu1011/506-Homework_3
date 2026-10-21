@@ -1,0 +1,731 @@
+---
+title: "Homework_3"
+editor: visual
+format:
+  html:
+    embed-resources: true
+---
+
+```{r}
+#Problem_1_(a)
+if (!dir.exists("data")) {
+  dir.create("data")
+}
+download.file("https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2015/DataFiles/AUX_I.xpt",
+destfile = "data/AUX_I.XPT",
+mode="wb"
+)
+download.file("https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2015/DataFiles/DEMO_I.xpt",
+destfile = "data/DEMO_I.XPT",
+mode = "wb"
+)
+AUX<-read_xpt("data/AUX_I.XPT")
+DEMO<-read_xpt("data/DEMO_I.XPT")
+
+intersect(names(AUX), names(DEMO))
+merged <- merge(AUX, DEMO)
+dim(merged)
+
+```
+
+```{r}
+#Problem_1_(b)
+merged$gender <- merged$RIAGENDR
+merged$gender <- factor(
+  merged$gender,
+  levels = c(1, 2),
+  labels = c("Male", "Female")
+)
+table(merged$gender, useNA = "always")
+
+merged$citizenship <- merged$DMDCITZN
+merged$citizenship[
+  merged$citizenship %in% c(7, 9)
+] <- NA
+merged$citizenship <- factor(
+  merged$citizenship,
+  levels = c(1, 2),
+  labels = c("Citizen", "Not a citizen")
+)
+table(merged$citizenship, useNA = "always")
+
+merged$children <- merged$DMDHHSZA
+merged$children <- factor(
+  merged$children,
+  levels = c(0, 1, 2, 3),
+  labels = c(
+    "No children",
+    "1 child",
+    "2 children",
+    "3 or more children"
+  )
+)
+table(merged$children, useNA = "always")
+
+merged$income <- merged$INDHHIN2
+
+merged$income[
+  merged$income %in% c(77, 99,12,13)
+] <- NA
+
+merged$income <- factor(
+  merged$income,
+  levels = c(1:10, 14, 15),
+  labels = c(
+    "$0–4,999",
+    "$5,000–9,999",
+    "$10,000–14,999",
+    "$15,000–19,999",
+    "$20,000–24,999",
+    "$25,000–34,999",
+    "$35,000–44,999",
+    "$45,000–54,999",
+    "$55,000–64,999",
+    "$65,000–74,999",
+    "$75,000–99,999",
+    "$100,000 or more"
+  ),
+  ordered = TRUE
+)
+
+table(merged$income, useNA = "always")
+```
+
+```{r}
+#problem_1_(c)
+
+merged$right <- merged$AUXTWIDR
+merged$left <- merged$AUXTWIDL
+
+merged$right[
+  merged$right %in% c(555, 777, 888)
+] <- NA
+
+merged$left[
+  merged$left %in% c(555, 777, 888)
+] <- NA
+merged$right <- as.numeric(merged$right)
+merged$left <- as.numeric(merged$left)
+merged$children_num <- merged$DMDHHSZA
+merged$children_num <- as.numeric(merged$children_num)
+merged$income_num <- as.numeric(merged$income)
+
+# Model 1R: right ear, gender only
+model_1R <- glm(
+  right ~ gender,
+  data = merged,
+  family = poisson(link = "log"),
+  na.action = na.omit
+)
+
+# Model 2R: right ear, all four predictors
+model_2R <- glm(
+  right ~ gender + citizenship + children_num + income_num,
+  data = merged,
+  family = poisson(link = "log"),
+  na.action = na.omit
+)
+
+# Model 1L: left ear, gender only
+model_1L <- glm(
+  left ~ gender,
+  data = merged,
+  family = poisson(link = "log"),
+  na.action = na.omit
+)
+
+# Model 2L: left ear, all four predictors
+model_2L <- glm(
+  left ~ gender + citizenship + children_num + income_num,
+  data = merged,
+  family = poisson(link = "log"),
+  na.action = na.omit
+)
+# Exponentiate the estimated coefficients
+irr_1R <- exp(coef(model_1R))
+irr_2R <- exp(coef(model_2R))
+irr_1L <- exp(coef(model_1L))
+irr_2L <- exp(coef(model_2L))
+
+# Combine the results into one table
+irr_table <- data.frame(
+  Term = c(
+    "Intercept (exp)",
+    "Female vs Male",
+    "Not a citizen vs Citizen",
+    "Children aged <=5: per recorded unit",
+    "Household income: per category increase"
+  ),
+  Model_1R = c(
+    irr_1R["(Intercept)"],
+    irr_1R["genderFemale"],
+    NA, NA, NA
+  ),
+  Model_2R = c(
+    irr_2R["(Intercept)"],
+    irr_2R["genderFemale"],
+    irr_2R["citizenshipNot a citizen"],
+    irr_2R["children_num"],
+    irr_2R["income_num"]
+  ),
+  Model_1L = c(
+    irr_1L["(Intercept)"],
+    irr_1L["genderFemale"],
+    NA, NA, NA
+  ),
+  Model_2L = c(
+    irr_2L["(Intercept)"],
+    irr_2L["genderFemale"],
+    irr_2L["citizenshipNot a citizen"],
+    irr_2L["children_num"],
+    irr_2L["income_num"]
+  ),
+  row.names = NULL
+)
+
+# Display a formatted table
+knitr::kable(
+  irr_table,
+  digits = 4,
+  col.names = c("Term", "1R", "2R", "1L", "2L"),
+  caption = "Exponentiated coefficients from the Poisson regression models."
+)
+
+# Calculate deviance-based pseudo-R-squared
+r2_1R <- 1 - model_1R$deviance / model_1R$null.deviance
+r2_2R <- 1 - model_2R$deviance / model_2R$null.deviance
+r2_1L <- 1 - model_1L$deviance / model_1L$null.deviance
+r2_2L <- 1 - model_2L$deviance / model_2L$null.deviance
+
+# Combine model statistics
+model_stats <- data.frame(
+  Model = c("1R", "2R", "1L", "2L"),
+  N = c(
+    nobs(model_1R),
+    nobs(model_2R),
+    nobs(model_1L),
+    nobs(model_2L)
+  ),
+  Pseudo_R2 = c(
+    r2_1R,
+    r2_2R,
+    r2_1L,
+    r2_2L
+  ),
+  AIC = c(
+    AIC(model_1R),
+    AIC(model_2R),
+    AIC(model_1L),
+    AIC(model_2L)
+  )
+)
+
+# Display a formatted table
+knitr::kable(
+  model_stats,
+  digits = c(0, 0, 5, 2),
+  col.names = c("Model", "Sample size", "Pseudo-R²", "AIC"),
+  caption = "Model statistics. Pseudo-R² is calculated as 1 minus residual deviance divided by null deviance."
+)
+```
+
+```{r}
+#Problrm_1_(d)
+
+# Part (d)
+
+# Test 1: Gender difference in IRR
+summary(model_2L)
+
+# Extract gender coefficient test
+gender_test <- coef(summary(model_2L))["genderFemale", ]
+
+gender_test
+
+# Calculate IRR
+exp(coef(model_2L)["genderFemale"])
+
+# 95% confidence interval for IRR
+exp(confint.default(model_2L)["genderFemale", ])
+
+
+# Test 2: Difference in predicted values
+
+# Keep other characteristics the same
+newdata <- model.frame(model_2L)[rep(1, 2), ]
+
+newdata$gender <- factor(
+  c("Male", "Female"),
+  levels = levels(model.frame(model_2L)$gender)
+)
+
+# Predicted left ear width
+predicted <- predict(
+  model_2L,
+  newdata = newdata,
+  type = "response"
+)
+
+predicted
+
+# Difference between female and male
+predicted[2] - predicted[1]
+
+
+```
+
+```{r}
+#Problrm 2 (a)
+if (!dir.exists("data")) {
+  dir.create("data")
+}
+download.file(
+  url = "https://raw.githubusercontent.com/bradleygrant/sakila-sqlite3/main/sakila_master.db",
+  destfile = "data/sakila_master.db",
+  mode = "wb"
+)
+#Because we use SQL in Rstudio so we need use the library to connect the database
+library(DBI)
+library(RSQLite)
+connection <- dbConnect(
+  SQLite(),
+  dbname = "data/sakila_master.db"
+)
+dbListTables(connection)
+#way 1 to solve the (a)，first select the all column of customer
+customer <- dbGetQuery(
+  connection,
+  "SELECT * FROM customer"
+)
+library(dplyr)
+
+result_a_1 <- customer %>%
+  group_by(store_id) %>%
+  summarise(
+    total_customers = n(),
+    #According to the Sakila, active: 1 = active customer, 0 = inactive customer
+    active_percentage = mean(active == 1) * 100,
+    .groups = "drop"
+  )
+
+result_a_1
+#Store 1 has 326 customers, of whom 97.55% are active. Store 2 has 273 customers, of whom 97.44% are active.
+
+#Using way 2 to slove the (a)
+result_a_2 <- dbGetQuery(
+  connection,
+  "
+  SELECT
+    store_id,
+    COUNT(*) AS total_customers,
+    AVG(active = 1) * 100 AS active_percentage
+  FROM customer
+  GROUP BY store_id
+  ORDER BY store_id
+  "
+)
+
+result_a_2
+#the result same as result_a_1 that use way 1
+#compare with these two 
+library(microbenchmark)
+
+compare_a <- microbenchmark(
+  method_1 = {
+    customer <- dbGetQuery(
+      connection,
+      "SELECT * FROM customer"
+    )
+
+    customer %>%
+      group_by(store_id) %>%
+      summarise(
+        total_customers = n(),
+        active_percentage = mean(active == 1) * 100,
+        .groups = "drop"
+      )
+  },
+
+  method_2 = dbGetQuery(
+    connection,
+    "SELECT store_id,
+            COUNT(*) AS total_customers,
+            AVG(active = 1) * 100 AS active_percentage
+     FROM customer
+     GROUP BY store_id
+     ORDER BY store_id"
+  ),
+
+  times = 100
+)
+
+compare_a
+```
+
+```{r}
+#Problem 2 (b)
+#First use way 1 to slove the question
+#select the data from SQL 
+# Problem 2(b): Method 1
+
+staff <- dbGetQuery(
+  connection,
+  "SELECT staff_id, first_name, last_name, address_id FROM staff"
+)
+
+address <- dbGetQuery(
+  connection,
+  "SELECT address_id, city_id FROM address"
+)
+
+city <- dbGetQuery(
+  connection,
+  "SELECT city_id, country_id FROM city"
+)
+
+country <- dbGetQuery(
+  connection,
+  "SELECT country_id, country FROM country"
+)
+#Since we don't know if the employees' addresses, cities and countries can be matched, we use left_join to ensure that each one is presented.
+result_b_1 <- staff %>%
+  left_join(address, by = "address_id") %>%
+  left_join(city, by = "city_id") %>%
+  left_join(country, by = "country_id") %>%
+  select(staff_id, first_name, last_name, country) %>%
+  arrange(staff_id)
+
+result_b_1
+
+#Using the way2 to solve the question
+result_b_2 <- dbGetQuery(
+  connection,
+  "
+  SELECT
+    s.staff_id,
+    s.first_name,
+    s.last_name,
+    co.country
+  FROM staff AS s
+  LEFT JOIN address AS a
+    ON s.address_id = a.address_id
+  LEFT JOIN city AS ci
+    ON a.city_id = ci.city_id
+  LEFT JOIN country AS co
+    ON ci.country_id = co.country_id
+  ORDER BY s.staff_id
+  "
+)
+
+result_b_2
+#Now compare these two ways
+compare_b <- microbenchmark(
+  method_1 = {
+    staff <- dbGetQuery(
+      connection,
+      "SELECT staff_id, first_name, last_name, address_id FROM staff"
+    )
+    address <- dbGetQuery(
+      connection,
+      "SELECT address_id, city_id FROM address"
+    )
+    city <- dbGetQuery(
+      connection,
+      "SELECT city_id, country_id FROM city"
+    )
+    country <- dbGetQuery(
+      connection,
+      "SELECT country_id, country FROM country"
+    )
+
+    staff %>%
+      left_join(address, by = "address_id") %>%
+      left_join(city, by = "city_id") %>%
+      left_join(country, by = "country_id") %>%
+      select(staff_id, first_name, last_name, country) %>%
+      arrange(staff_id)
+  },
+
+  method_2 = {
+    dbGetQuery(
+      connection,
+      "
+      SELECT
+        s.staff_id,
+        s.first_name,
+        s.last_name,
+        co.country
+      FROM staff AS s
+      LEFT JOIN address AS a
+        ON s.address_id = a.address_id
+      LEFT JOIN city AS ci
+        ON a.city_id = ci.city_id
+      LEFT JOIN country AS co
+        ON ci.country_id = co.country_id
+      ORDER BY s.staff_id
+      "
+    )
+  },
+
+  times = 100
+)
+
+compare_b
+```
+
+```{r}
+#Problrm_1_(c)
+#Firstly, use the way1 to solve the question-Select the data from SQL and then use R to calculate
+payment <- dbGetQuery(
+  connection,
+  "SELECT rental_id, amount FROM payment"
+)
+
+rental <- dbGetQuery(
+  connection,
+  "SELECT rental_id, inventory_id FROM rental"
+)
+
+inventory <- dbGetQuery(
+  connection,
+  "SELECT inventory_id, film_id FROM inventory"
+)
+
+film <- dbGetQuery(
+  connection,
+  "SELECT film_id, title FROM film"
+)
+result_c_1 <- payment %>%
+  inner_join(rental, by = "rental_id") %>%
+  inner_join(inventory, by = "inventory_id") %>%
+  inner_join(film, by = "film_id") %>%
+  filter(amount == max(amount, na.rm = TRUE)) %>%
+  select(title, amount) %>%
+  distinct() %>%
+  arrange(title)
+
+result_c_1
+
+#Using the using way 2 to solve the same question
+result_c_2 <- dbGetQuery(
+  connection,
+  "
+  SELECT DISTINCT
+    f.title,
+    p.amount
+  FROM payment AS p
+  INNER JOIN rental AS r
+    ON p.rental_id = r.rental_id
+  INNER JOIN inventory AS i
+    ON r.inventory_id = i.inventory_id
+  INNER JOIN film AS f
+    ON i.film_id = f.film_id
+  WHERE p.amount = (
+    SELECT MAX(amount)
+    FROM payment
+  )
+  ORDER BY f.title
+  "
+)
+
+result_c_2
+
+#compare with these two results
+compare_c <- microbenchmark(
+  method_1 = {
+    payment <- dbGetQuery(
+      connection,
+      "SELECT rental_id, amount FROM payment"
+    )
+    rental <- dbGetQuery(
+      connection,
+      "SELECT rental_id, inventory_id FROM rental"
+    )
+    inventory <- dbGetQuery(
+      connection,
+      "SELECT inventory_id, film_id FROM inventory"
+    )
+    film <- dbGetQuery(
+      connection,
+      "SELECT film_id, title FROM film"
+    )
+
+    payment %>%
+      inner_join(rental, by = "rental_id") %>%
+      inner_join(inventory, by = "inventory_id") %>%
+      inner_join(film, by = "film_id") %>%
+      filter(amount == max(amount, na.rm = TRUE)) %>%
+      select(title, amount) %>%
+      distinct() %>%
+      arrange(title)
+  },
+
+  method_2 = {
+    dbGetQuery(
+      connection,
+      "
+      SELECT DISTINCT
+        f.title,
+        p.amount
+      FROM payment AS p
+      INNER JOIN rental AS r
+        ON p.rental_id = r.rental_id
+      INNER JOIN inventory AS i
+        ON r.inventory_id = i.inventory_id
+      INNER JOIN film AS f
+        ON i.film_id = f.film_id
+      WHERE p.amount = (
+        SELECT MAX(amount)
+        FROM payment
+      )
+      ORDER BY f.title
+      "
+    )
+  },
+
+  times = 100
+)
+
+compare_c
+```
+
+```{r}
+#Problem_3_(a)
+#First download the data
+if (!dir.exists("data")) {
+  dir.create("data")
+}
+download.file(
+  url = "https://www.briandunning.com/sample-data/au-500.zip",
+  destfile = "data/au-500.zip",
+  mode = "wb"
+)
+unzip("data/au-500.zip", exdir = "data")
+income <- read.csv("data/au-500.csv")
+names(income)
+com <- grepl("\\.com$", income$web)
+mean(com) * 100
+#What percentage of the websites are .com’s
+#The answer is 0%
+
+```
+
+```{r}
+#Problrm_3(b)
+domain_name <- sub(".*@", "", income$email)
+domain_count <- sort(
+  table(domain_name),
+  decreasing = TRUE
+)
+
+head(domain_count)
+domain_count[domain_count == max(domain_count)]
+#the most common domain name is hotmail.com is 114
+
+```
+
+```{r}
+#Problem_3_(c)
+# Detect characters other than letters, commas, and whitespace
+non_letter <- grepl(
+  "[^[:alpha:][:space:],]",
+  income$company_name
+)
+
+# Calculate the proportion
+mean(non_letter)
+
+# Also exclude ampersands
+non_letter_no_amp <- grepl(
+  "[^[:alpha:][:space:],&]",
+  income$company_name
+)
+
+# Calculate the proportion
+mean(non_letter_no_amp)
+#Excluding commas and whitespace, 9% of company names contain a non-alphabetic character. When ampersands (&) are also excluded, the percentage decreases to 0.8%.
+```
+
+```{r}
+#Problem_3_(d)
+#delete the "-" first
+phone1digits <- gsub("-", "", income$phone1)
+phone2digits <- gsub("-", "", income$phone2)
+#readd the "-"
+income$phone1 <- sub(
+  "^([0-9]{4})([0-9]{3})([0-9]{3})$",
+  "\\1-\\2-\\3",
+  phone1_digits
+)
+
+income$phone2 <- sub(
+  "^([0-9]{4})([0-9]{3})([0-9]{3})$",
+  "\\1-\\2-\\3",
+  phone2_digits
+)
+head(income$phone1, 10)
+head(income$phone2, 10)
+```
+
+```{r}
+#Problem_3_(e)
+#first choose the apartment
+apartment_number <- grepl("[0-9]+$", income$address)
+apartment_address <- income$address[apartment_number]
+#select the umbers
+apartment <- sub(
+  "^.*[^0-9]([0-9]+)$",
+  "\\1",
+  apartment_address
+)
+apartment <- as.numeric(apartment)
+
+#draw the graph
+log_apartment <- log(apartment[apartment > 0])
+
+hist(
+  log_apartment,
+  main = "Log of Apartment Numbers",
+  xlab = "Log apartment number",
+  ylab = "Frequency",
+  col = "blue",
+  border = "red"
+)
+```
+
+```{r}
+#Problem_3_(f)
+apartment_positive <- apartment[!is.na(apartment) & apartment > 0]
+#keep positive number
+first_digit <- substr(
+  as.character(apartment_positive),
+  1,
+  1
+)
+
+observed <- as.numeric(
+  prop.table(
+    table(factor(first_digit, levels = 1:9))
+  )
+)
+
+expected <- log10(1 + 1 / (1:9))
+
+comparison <- data.frame(
+  digit = 1:9,
+  observed = observed,
+  expected = expected
+)
+
+comparison
+barplot(
+  rbind(observed, expected),
+  beside = TRUE,
+  names.arg = 1:9,
+  col = c("red", "blue"),
+  legend.text = c("Observed", "Benford"),
+  xlab = "First digit",
+  ylab = "Proportion",
+  main = "First Digits of Apartment Numbers"
+)
+```
