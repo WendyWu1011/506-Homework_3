@@ -275,7 +275,7 @@ predicted[2] - predicted[1]
 ```
 
 ```{r}
-#Problrm_2_(a)
+# Problem 2(a)
 if (!dir.exists("data")) {
   dir.create("data")
 }
@@ -651,7 +651,7 @@ mean(non_letter_no_amp)
 #delete the "-" first
 phone1digits <- gsub("-", "", income$phone1)
 phone2digits <- gsub("-", "", income$phone2)
-#readd the "-"
+#add the "-"
 income$phone1 <- sub(
   "^([0-9]{4})([0-9]{3})([0-9]{3})$",
   "\\1-\\2-\\3",

@@ -2655,7 +2655,7 @@ Number of Fisher Scoring iterations: 4</code></pre>
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="co">#Problrm_2_(a)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Problem 2(a)</span></span>
 <span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">dir.exists</span>(<span class="st">&quot;data&quot;</span>)) {</span>
 <span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="st">&quot;data&quot;</span>)</span>
 <span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>}</span>
@@ -2787,9 +2787,9 @@ Attaching package: &#39;dplyr&#39;</code></pre>
 <span id="cb44-30"><a href="#cb44-30" aria-hidden="true" tabindex="-1"></a>compare_a</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Unit: microseconds
-     expr      min       lq     mean   median        uq       max neval
- method_1 7290.001 8049.201 10934.76 9487.651 12718.351 23429.501   100
- method_2  880.401 1098.752  1524.24 1472.850  1807.301  3228.201   100</code></pre>
+     expr      min       lq     mean    median        uq       max neval
+ method_1 6400.402 8851.550 10570.08 10572.151 12180.250 25967.802   100
+ method_2  942.601 1215.302  1548.86  1462.851  1709.751  6541.501   100</code></pre>
 </div>
 </div>
 <div class="cell">
@@ -2912,9 +2912,9 @@ Attaching package: &#39;dplyr&#39;</code></pre>
 <span id="cb50-53"><a href="#cb50-53" aria-hidden="true" tabindex="-1"></a>compare_b</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Unit: microseconds
-     expr       min        lq      mean   median        uq       max neval
- method_1 18130.101 23886.451 25166.221 24465.60 25847.401 38052.201   100
- method_2   893.801  1228.651  1483.663  1493.45  1631.952  2528.102   100</code></pre>
+     expr       min        lq      mean    median        uq       max neval
+ method_1 15090.401 24158.951 28524.473 26880.802 32900.301 49051.502   100
+ method_2   776.101  1245.452  1580.486  1545.151  1858.951  2752.301   100</code></pre>
 </div>
 </div>
 <div class="cell">
@@ -3055,9 +3055,9 @@ Attaching package: &#39;dplyr&#39;</code></pre>
 <span id="cb56-57"><a href="#cb56-57" aria-hidden="true" tabindex="-1"></a>compare_c</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Unit: milliseconds
-     expr       min        lq      mean    median       uq      max neval
- method_1 44.579000 56.221351 75.300844 78.402351 90.88175 120.1484   100
- method_2  2.597202  4.575201  7.489406  6.679351 10.17720  18.3489   100</code></pre>
+     expr     min        lq      mean    median       uq      max neval
+ method_1 47.1252 68.894451 81.866010 85.109901 91.67895 127.2073   100
+ method_2  2.7878  4.659251  7.601335  6.246651 11.16820  17.7076   100</code></pre>
 </div>
 </div>
 <div class="cell">
@@ -3141,7 +3141,7 @@ ahlborn.com.au
 <span id="cb73-2"><a href="#cb73-2" aria-hidden="true" tabindex="-1"></a><span class="co">#delete the &quot;-&quot; first</span></span>
 <span id="cb73-3"><a href="#cb73-3" aria-hidden="true" tabindex="-1"></a>phone1digits <span class="ot">&lt;-</span> <span class="fu">gsub</span>(<span class="st">&quot;-&quot;</span>, <span class="st">&quot;&quot;</span>, income<span class="sc">$</span>phone1)</span>
 <span id="cb73-4"><a href="#cb73-4" aria-hidden="true" tabindex="-1"></a>phone2digits <span class="ot">&lt;-</span> <span class="fu">gsub</span>(<span class="st">&quot;-&quot;</span>, <span class="st">&quot;&quot;</span>, income<span class="sc">$</span>phone2)</span>
-<span id="cb73-5"><a href="#cb73-5" aria-hidden="true" tabindex="-1"></a><span class="co">#readd the &quot;-&quot;</span></span>
+<span id="cb73-5"><a href="#cb73-5" aria-hidden="true" tabindex="-1"></a><span class="co">#add the &quot;-&quot;</span></span>
 <span id="cb73-6"><a href="#cb73-6" aria-hidden="true" tabindex="-1"></a>income<span class="sc">$</span>phone1 <span class="ot">&lt;-</span> <span class="fu">sub</span>(</span>
 <span id="cb73-7"><a href="#cb73-7" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;^([0-9]{4})([0-9]{3})([0-9]{3})$&quot;</span>,</span>
 <span id="cb73-8"><a href="#cb73-8" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;</span><span class="sc">\\</span><span class="st">1-</span><span class="sc">\\</span><span class="st">2-</span><span class="sc">\\</span><span class="st">3&quot;</span>,</span>
