@@ -728,4 +728,5 @@ barplot(
   ylab = "Proportion",
   main = "First Digits of Apartment Numbers"
 )
+#The leading-digit distribution does not appear to follow Benford’s law. For example, digit 1 occurs in about 9.23% of apartment numbers, compared with the expected 30.10%. Thus, the data would not pass a Benford-based check. However, apartment numbers do not necessarily follow Benford’s law, so this alone does not establish that the data are fake.
 ```
